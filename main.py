@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 
-# Функция вывода изображения
+# Вывод изображения
 def show_image(image, title=None):
     if title == "Ч/Б":
         plt.imshow(image, cmap="gray")
@@ -15,6 +15,7 @@ def show_image(image, title=None):
     plt.show()
 
 
+# Обработка изображения
 def image_processing(image):
     # Конвертация из BGR в RGB
     original_image = cv2.cvtColor(image_seal, cv2.COLOR_BGR2RGB)
