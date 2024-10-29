@@ -20,7 +20,7 @@ def show_all_images(*images):
 
     for i, (img, title) in enumerate(zip(images, titles)):
         plt.subplot(3, 3, i + 1)
-        plt.imshow(img, cmap='gray' if 'Ч/Б' in title or 'Бинаризация' in title else None)
+        plt.imshow(img, cmap='gray' if 'Ч/Б' in title or 'Бинаризация' in title or 'Границы' in title else None)
         plt.title(title)
         plt.axis("off")
 
@@ -39,7 +39,14 @@ def image_processing(path):
     contour_image_c = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Размытие изображения
-    blurred_image = cv2.GaussianBlur(original_image, (25, 25), 0)  # кэнни: 11 для шарика, 25 для шарика и подсолнуха
+    if path == "sunflower.jpg" or path == "main_road.jpg":
+        blurred_image = cv2.GaussianBlur(original_image, (25, 25), 0)  # кэнни: 11 для шарика, 25 для знака и подсолнуха
+    elif path == "balloon.jpg":
+        blurred_image = cv2.GaussianBlur(original_image, (11, 11), 0)
+    elif path == "dog.jpg":
+        blurred_image = cv2.GaussianBlur(original_image, (3, 3), 0)
+    else:
+        blurred_image = cv2.GaussianBlur(original_image, (21, 21), 0)
 
     # Преобразование обратно в BGR и в оттенки серого
     bgr_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2BGR)
@@ -53,11 +60,11 @@ def image_processing(path):
     sobel_image = cv2.convertScaleAbs(grad_combined_image)
 
     # Алгоритм Кэнни для нахождения границ
-    canny_image = cv2.Canny(blurred_image, threshold1=70, threshold2=130)  # 50, 150
+    canny_image = cv2.Canny(blurred_image, threshold1=50, threshold2=150)  # 50, 150
 
     # Бинаризация
     max_output_value = 255
-    neighborhood_size = 27
+    neighborhood_size = 47
     subtract_from_mean = 5
     binarized_image_sobel = cv2.adaptiveThreshold(sobel_image,
                                                   max_output_value,
@@ -68,7 +75,7 @@ def image_processing(path):
 
     max_output_value = 255
     neighborhood_size = 47
-    subtract_from_mean = 9
+    subtract_from_mean = 5
     binarized_image_canny = cv2.adaptiveThreshold(canny_image,
                                                   max_output_value,
                                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -94,8 +101,10 @@ path_seal = "seal.jpg"  # Тюленчик
 path_sunflower = "sunflower.jpg"  # Подсолнух
 path_sign = "main_road.jpg"  # Знак
 path_balloon = "balloon.jpg"  # Шарик
+path_dog = "dog.jpg"  # Бобака
 
 image_processing(path_seal)
 image_processing(path_sunflower)
 image_processing(path_sign)
 image_processing(path_balloon)
+image_processing(path_dog)
