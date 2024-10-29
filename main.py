@@ -9,10 +9,10 @@ def show_all_images(*images):
         "Размытое",
         "Ч/Б",
         "Границы (Собель)",
-        "Границы (Кэнни)",
         "Бинаризация (Собель)",
-        "Бинаризация (Кэнни)",
         "Контур (Собель)",
+        "Границы (Кэнни)",
+        "Бинаризация (Кэнни)",
         "Контур (Кэнни)"
     ]
 
@@ -39,7 +39,7 @@ def image_processing(path):
     contour_image_c = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Размытие изображения
-    blurred_image = cv2.GaussianBlur(original_image, (27, 27), 0)
+    blurred_image = cv2.GaussianBlur(original_image, (25, 25), 0)  # кэнни: 11 для шарика, 25 для шарика и подсолнуха
 
     # Преобразование обратно в BGR и в оттенки серого
     bgr_image = cv2.cvtColor(blurred_image, cv2.COLOR_RGB2BGR)
@@ -53,12 +53,12 @@ def image_processing(path):
     sobel_image = cv2.convertScaleAbs(grad_combined_image)
 
     # Алгоритм Кэнни для нахождения границ
-    canny_image = cv2.Canny(blurred_image, threshold1=50, threshold2=150)
+    canny_image = cv2.Canny(blurred_image, threshold1=70, threshold2=130)  # 50, 150
 
     # Бинаризация
     max_output_value = 255
-    neighborhood_size = 47
-    subtract_from_mean = 9
+    neighborhood_size = 27
+    subtract_from_mean = 5
     binarized_image_sobel = cv2.adaptiveThreshold(sobel_image,
                                                   max_output_value,
                                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -82,11 +82,11 @@ def image_processing(path):
 
     # Отрисовка контуров на исходнике
     cv2.drawContours(contour_image_s, contours_sobel, -1, (0, 255, 0), 3)
-    cv2.drawContours(contour_image_c, contours_canny, -1, (0, 255, 0), 3)
+    cv2.drawContours(contour_image_c, contours_canny, -1, (0, 255, 0), 7)
 
     show_all_images(original_image, blurred_image, gray_image,
-                    sobel_image, canny_image, binarized_image_sobel,
-                    binarized_image_canny, contour_image_s, contour_image_c)
+                    sobel_image, binarized_image_sobel, contour_image_s,
+                    canny_image, binarized_image_canny, contour_image_c)
 
 
 # Загрузка цветных изображений
