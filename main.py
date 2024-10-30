@@ -26,6 +26,22 @@ def show_all_images(*images):
 
     plt.show()
 
+def sobel_filter(gray_image):
+    # Фильтр Собеля для нахождения границ
+    kernel_G_x = np.array([[-1, -2, -1],
+                           [0, 0, 0],
+                           [1, 2, 1]])
+
+    kernel_G_y = np.array([[-1, 0, 1],
+                           [-2, 0, 2],
+                           [-1, 0, 1]])
+
+    G_x = cv2.filter2D(gray_image, cv2.CV_64F, kernel_G_x)
+    G_y = cv2.filter2D(gray_image, cv2.CV_64F, kernel_G_y)
+    G = np.hypot(G_x, G_y)
+    G_normalized = np.round((G / G.max()) * 255).astype(int)
+    image_G = cv2.convertScaleAbs(G_normalized)
+    return image_G
 
 # Обработка изображения
 def image_processing(path):
@@ -53,19 +69,15 @@ def image_processing(path):
     gray_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
 
     # Фильтр Собеля для нахождения границ
-    grad_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
-    grad_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
-
-    grad_combined_image = cv2.addWeighted(grad_x, 0.5, grad_y, 0.5, 0)
-    sobel_image = cv2.convertScaleAbs(grad_combined_image)
+    sobel_image = sobel_filter(gray_image)
 
     # Алгоритм Кэнни для нахождения границ
     canny_image = cv2.Canny(blurred_image, threshold1=50, threshold2=150)  # 50, 150
 
     # Бинаризация
-    max_output_value = 255
-    neighborhood_size = 47
-    subtract_from_mean = 5
+    max_output_value = 255  # 35 47 sunfl
+    neighborhood_size = 35
+    subtract_from_mean = 47
     binarized_image_sobel = cv2.adaptiveThreshold(sobel_image,
                                                   max_output_value,
                                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -102,9 +114,14 @@ path_sunflower = "sunflower.jpg"  # Подсолнух
 path_sign = "main_road.jpg"  # Знак
 path_balloon = "balloon.jpg"  # Шарик
 path_dog = "dog.jpg"  # Бобака
+path_chess = "chess.jpg" # Пешка
 
-image_processing(path_seal)
-image_processing(path_sunflower)
-image_processing(path_sign)
-image_processing(path_balloon)
-image_processing(path_dog)
+
+
+# image_processing("5.jpg")
+# image_processing(path_chess)
+# image_processing(path_dog)
+# image_processing(path_seal)
+# image_processing(path_sunflower)
+# image_processing(path_sign)
+# image_processing(path_balloon)
