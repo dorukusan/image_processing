@@ -112,10 +112,70 @@ def non_max_suppression(G, theta):
     return Z
 
 
-def canny(gray_image):
-    G, theta = sobel_filter(gray_image, return_theta=True)
-    non_max_suppression(G, theta)
+def threshold(img, low_threshold, high_threshold):
+    img = np.round((img / img.max()) * 255).astype(int)
+    # Получаем размеры матрицы
+    M, N = img.shape
+    # Создаем результирующую матрицу
+    res = np.zeros((M, N), dtype=np.int32)
+    # Значения неопределенных пикселей
+    weak = 90
+    # Значение пикселей, прошедших порог максимума
+    strong = 255
+    # Получение индексов пикселей, прошедших порог максимума
+    strong_i, strong_j = np.where(img >= high_threshold)
+    # # Получение индексов пикселей, прошедших порог минимума и непрошедших порог максимума
+    weak_i, weak_j = np.where((img < high_threshold) & (img >= low_threshold))
+    res[strong_i, strong_j] = strong
+    res[weak_i, weak_j] = weak
 
+    return res
+
+def hysteresis(img):
+    #Направления, в которых идем от сильного пикселя
+    directions = np.array([[-1, -1, -1, 0, 0, 1, 1, 1,],
+                           [-1, 0, 1, -1, 1, -1, 0, 1]])
+    # Получаем размеры матрицы
+    M, N = img.shape
+    # Создаем результирующую матрицу
+    res = np.zeros((M, N), dtype=np.int32)
+    # Значение пикселей, прошедших порог максимума
+    strong = 255
+    # Перебор всех пикселей
+    for i in range(1, M):
+        for j in range(1, N):
+            # Если сильный пиксель
+            if img[i, j] == strong:
+                # Записываем его в матрицу
+                res[i, j] = strong
+                # Идем от него в разные стороны
+                for k in range(8):
+                    dx = directions[0, k]
+                    dy = directions[1, k]
+                    x = i
+                    y = j
+                    while True:
+                        # Делаем шаг в сторону
+                        x += dx
+                        y += dy
+                        # Проверяем, не ушли ли за границу изображения
+                        if x < 0 or y < 0 or x >= N or y >= M:
+                            break
+                        # Если встретили сильный или пустой пиксель
+                        if img[x, y] == strong or img[x, y] == 0:
+                            break
+                        # Заменяем слабый пиксель на сильный
+                        res[x, y] = strong
+    return res
+
+def canny(gray_image, low_threshold, high_threshold):
+    G, theta = sobel_filter(gray_image, return_theta=True)
+    res = non_max_suppression(G, theta)
+    res = threshold(res, low_threshold, high_threshold)
+    res = hysteresis(res)
+    res_normalized = np.round((res / res.max()) * 255).astype(int)
+    image_res = cv2.convertScaleAbs(res_normalized)
+    return image_res
 
 # Обработка изображения
 def image_processing(path):
@@ -155,8 +215,8 @@ def image_processing(path):
 
     # Алгоритм Кэнни для нахождения границ
     # canny(gray_image)
-    canny_image_lib = cv2.Canny(gray_image, threshold1=60, threshold2=140)  # 50, 150
-    canny_image_our = cv2.Canny(gray_image, threshold1=60, threshold2=140)  # 50, 150
+    canny_image_lib = cv2.Canny(gray_image, threshold1=10, threshold2=70)  # 50, 150
+    canny_image_our = canny(gray_image, 10, 70)
 
     # Бинаризация
     max_output_value = 255  # 35 47 sunfl
