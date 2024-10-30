@@ -131,6 +131,7 @@ def threshold(img, low_threshold, high_threshold):
 
     return res
 
+
 def hysteresis(img):
     #Направления, в которых идем от сильного пикселя
     directions = np.array([[-1, -1, -1, 0, 0, 1, 1, 1,],
@@ -168,6 +169,7 @@ def hysteresis(img):
                         res[x, y] = strong
     return res
 
+
 def canny(gray_image, low_threshold, high_threshold):
     G, theta = sobel_filter(gray_image, return_theta=True)
     res = non_max_suppression(G, theta)
@@ -176,6 +178,7 @@ def canny(gray_image, low_threshold, high_threshold):
     res_normalized = np.round((res / res.max()) * 255).astype(int)
     image_res = cv2.convertScaleAbs(res_normalized)
     return image_res
+
 
 # Обработка изображения
 def image_processing(path):
@@ -214,14 +217,13 @@ def image_processing(path):
     sobel_image_our = sobel_filter(gray_image)
 
     # Алгоритм Кэнни для нахождения границ
-    # canny(gray_image)
     canny_image_lib = cv2.Canny(gray_image, threshold1=10, threshold2=70)  # 50, 150
     canny_image_our = canny(gray_image, 10, 70)
 
     # Бинаризация
     max_output_value = 255  # 35 47 sunfl
     neighborhood_size = 35
-    subtract_from_mean = 47
+    subtract_from_mean = 20
     binarized_image_sobel_lib = cv2.adaptiveThreshold(sobel_image_lib,
                                                       max_output_value,
                                                       cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -231,7 +233,7 @@ def image_processing(path):
 
     max_output_value = 255
     neighborhood_size = 35
-    subtract_from_mean = 47
+    subtract_from_mean = 20
     binarized_image_sobel_our = cv2.adaptiveThreshold(sobel_image_our,
                                                       max_output_value,
                                                       cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -249,16 +251,16 @@ def image_processing(path):
     canny_contour_our, hierarchy22 = cv2.findContours(canny_image_our, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Отрисовка контуров на исходнике
-    cv2.drawContours(contour_image_s_lib, sobel_contour_lib, -1, (0, 255, 0), 3)
-    cv2.drawContours(contour_image_s_our, sobel_contour_our, -1, (0, 255, 0), 3)
+    cv2.drawContours(contour_image_s_lib, sobel_contour_lib, -1, (0, 255, 0), 7)
+    cv2.drawContours(contour_image_s_our, sobel_contour_our, -1, (0, 255, 0), 7)
 
     cv2.drawContours(contour_image_c_lib, canny_contour_lib, -1, (0, 255, 0), 7)
     cv2.drawContours(contour_image_c_our, canny_contour_our, -1, (0, 255, 0), 7)
 
-    show_all_images(original_image, canny_image_lib, contour_image_s_lib,
-                    blurred_image, canny_image_our, contour_image_s_our,
-                    sobel_image_lib, binarized_image_sobel_lib, contour_image_c_lib,
-                    sobel_image_our, binarized_image_sobel_our, contour_image_c_our)
+    show_all_images(original_image, canny_image_lib, contour_image_c_lib,
+                    blurred_image, canny_image_our, contour_image_c_our,
+                    sobel_image_lib, binarized_image_sobel_lib, contour_image_s_lib,
+                    sobel_image_our, binarized_image_sobel_our, contour_image_s_our)
 
 
 # Загрузка цветных изображений
@@ -270,10 +272,10 @@ path_dog = "dog.jpg"  # Бобака
 path_chess = "chess.jpg"  # Пешка
 path_arbuz = "5.jpg"  # Арбуз
 
-image_processing(path_arbuz)
+# image_processing(path_arbuz)
 # image_processing(path_chess)
 # image_processing(path_dog)
 # image_processing(path_seal)
-# image_processing(path_sunflower)
+image_processing(path_sunflower)
 # image_processing(path_sign)
 # image_processing(path_balloon)
