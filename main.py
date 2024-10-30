@@ -6,27 +6,35 @@ import numpy as np
 def show_all_images(*images):
     titles = [
         "Исходник",
+        "Границы (библ. Кэнни)",
+        "Контур (библ. Кэнни)",
+
         "Размытое",
-        "Ч/Б",
-        "Границы (Собель)",
-        "Бинаризация (Собель)",
-        "Контур (Собель)",
-        "Границы (Кэнни)",
-        "Бинаризация (Кэнни)",
-        "Контур (Кэнни)"
+        "Границы (наш Кэнни)",
+        "Контур (наш Кэнни)",
+
+        "Границы (библ. Собель)",
+        "Бинаризация (библ. Собель)",
+        "Контур (библ. Собель)",
+
+        "Границы (наш Собель)",
+        "Бинаризация (наш Собель)",
+        "Контур (наш Собель)",
     ]
 
     plt.figure(figsize=(20, 16))
 
     for i, (img, title) in enumerate(zip(images, titles)):
-        plt.subplot(3, 3, i + 1)
+        plt.subplot(4, 3, i + 1)
         plt.imshow(img, cmap='gray' if 'Ч/Б' in title or 'Бинаризация' in title or 'Границы' in title else None)
         plt.title(title)
         plt.axis("off")
 
+    plt.tight_layout()
     plt.show()
 
-def sobel_filter(gray_image,return_theta = False):
+
+def sobel_filter(gray_image, return_theta=False):
     # Фильтр Собеля для нахождения границ
     kernel_G_x = np.array([[-1, -2, -1],
                            [0, 0, 0],
@@ -47,6 +55,7 @@ def sobel_filter(gray_image,return_theta = False):
     else:
         return image_G
 
+
 def non_max_suppression(G, theta):
     # Получаем размеры матрицы
     M, N = G.shape
@@ -59,7 +68,7 @@ def non_max_suppression(G, theta):
     # прибавив ко всем отрицательным значениям + 180 градусов
     # max -> 180, min -> 0
     angle[angle < 0] += 180
-    #Перебор всех пикселей кроме тех, у кого присутствуют не все соседи
+    # Перебор всех пикселей кроме тех, у кого присутствуют не все соседи
     for i in range(1, M - 1):
         for j in range(1, N - 1):
             # Инициализация значений соседних пикселей
@@ -94,21 +103,19 @@ def non_max_suppression(G, theta):
                 Z[i, j] = G[i, j]
             else:
                 Z[i, j] = 0
-    plt.imshow(G, cmap='gray')
-    plt.axis('off')
-    plt.show()
-    plt.imshow(Z, cmap='gray')
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(G, cmap='gray')
+    # plt.axis('off')
+    # plt.show()
+    # plt.imshow(Z, cmap='gray')
+    # plt.axis('off')
+    # plt.show()
     return Z
-
-
 
 
 def canny(gray_image):
     G, theta = sobel_filter(gray_image, return_theta=True)
     non_max_suppression(G, theta)
-    exit(0)
+
 
 # Обработка изображения
 def image_processing(path):
@@ -118,8 +125,10 @@ def image_processing(path):
     # Конвертация из BGR в RGB
     original_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    contour_image_s = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    contour_image_c = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    contour_image_s_lib = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    contour_image_s_our = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    contour_image_c_lib = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    contour_image_c_our = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Размытие изображения
     if path == "sunflower.jpg" or path == "main_road.jpg":
@@ -136,44 +145,60 @@ def image_processing(path):
     gray_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
 
     # Фильтр Собеля для нахождения границ
-    sobel_image = sobel_filter(gray_image)
+    sobel_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
+    sobel_image_lib = cv2.magnitude(sobel_x, sobel_y)
+    sobel_image_lib = np.round((sobel_image_lib / sobel_image_lib.max()) * 255).astype(int)
+    sobel_image_lib = cv2.convertScaleAbs(sobel_image_lib)
+
+    sobel_image_our = sobel_filter(gray_image)
 
     # Алгоритм Кэнни для нахождения границ
-    canny(gray_image)
-    canny_image = cv2.Canny(blurred_image, threshold1=50, threshold2=150)  # 50, 150
+    # canny(gray_image)
+    canny_image_lib = cv2.Canny(gray_image, threshold1=60, threshold2=140)  # 50, 150
+    canny_image_our = cv2.Canny(gray_image, threshold1=60, threshold2=140)  # 50, 150
 
     # Бинаризация
     max_output_value = 255  # 35 47 sunfl
     neighborhood_size = 35
     subtract_from_mean = 47
-    binarized_image_sobel = cv2.adaptiveThreshold(sobel_image,
-                                                  max_output_value,
-                                                  cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                  cv2.THRESH_BINARY_INV,
-                                                  neighborhood_size,
-                                                  subtract_from_mean)
+    binarized_image_sobel_lib = cv2.adaptiveThreshold(sobel_image_lib,
+                                                      max_output_value,
+                                                      cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                      cv2.THRESH_BINARY_INV,
+                                                      neighborhood_size,
+                                                      subtract_from_mean)
 
     max_output_value = 255
-    neighborhood_size = 47
-    subtract_from_mean = 5
-    binarized_image_canny = cv2.adaptiveThreshold(canny_image,
-                                                  max_output_value,
-                                                  cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                  cv2.THRESH_BINARY_INV,
-                                                  neighborhood_size,
-                                                  subtract_from_mean)
+    neighborhood_size = 35
+    subtract_from_mean = 47
+    binarized_image_sobel_our = cv2.adaptiveThreshold(sobel_image_our,
+                                                      max_output_value,
+                                                      cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                      cv2.THRESH_BINARY_INV,
+                                                      neighborhood_size,
+                                                      subtract_from_mean)
 
     # Поиск контуров
-    contours_sobel, hierarchy1 = cv2.findContours(binarized_image_sobel, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours_canny, hierarchy2 = cv2.findContours(binarized_image_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    sobel_contour_lib, hierarchy11 = cv2.findContours(binarized_image_sobel_lib, cv2.RETR_EXTERNAL,
+                                                      cv2.CHAIN_APPROX_SIMPLE)
+    sobel_contour_our, hierarchy12 = cv2.findContours(binarized_image_sobel_our, cv2.RETR_EXTERNAL,
+                                                      cv2.CHAIN_APPROX_SIMPLE)
+
+    canny_contour_lib, hierarchy21 = cv2.findContours(canny_image_lib, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    canny_contour_our, hierarchy22 = cv2.findContours(canny_image_our, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Отрисовка контуров на исходнике
-    cv2.drawContours(contour_image_s, contours_sobel, -1, (0, 255, 0), 3)
-    cv2.drawContours(contour_image_c, contours_canny, -1, (0, 255, 0), 7)
+    cv2.drawContours(contour_image_s_lib, sobel_contour_lib, -1, (0, 255, 0), 3)
+    cv2.drawContours(contour_image_s_our, sobel_contour_our, -1, (0, 255, 0), 3)
 
-    show_all_images(original_image, blurred_image, gray_image,
-                    sobel_image, binarized_image_sobel, contour_image_s,
-                    canny_image, binarized_image_canny, contour_image_c)
+    cv2.drawContours(contour_image_c_lib, canny_contour_lib, -1, (0, 255, 0), 7)
+    cv2.drawContours(contour_image_c_our, canny_contour_our, -1, (0, 255, 0), 7)
+
+    show_all_images(original_image, canny_image_lib, contour_image_s_lib,
+                    blurred_image, canny_image_our, contour_image_s_our,
+                    sobel_image_lib, binarized_image_sobel_lib, contour_image_c_lib,
+                    sobel_image_our, binarized_image_sobel_our, contour_image_c_our)
 
 
 # Загрузка цветных изображений
@@ -182,11 +207,10 @@ path_sunflower = "sunflower.jpg"  # Подсолнух
 path_sign = "main_road.jpg"  # Знак
 path_balloon = "balloon.jpg"  # Шарик
 path_dog = "dog.jpg"  # Бобака
-path_chess = "chess.jpg" # Пешка
+path_chess = "chess.jpg"  # Пешка
+path_arbuz = "5.jpg"  # Арбуз
 
-
-
-image_processing("5.jpg")
+image_processing(path_arbuz)
 # image_processing(path_chess)
 # image_processing(path_dog)
 # image_processing(path_seal)
