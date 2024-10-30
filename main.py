@@ -26,7 +26,7 @@ def show_all_images(*images):
 
     plt.show()
 
-def sobel_filter(gray_image):
+def sobel_filter(gray_image,return_theta = False):
     # Фильтр Собеля для нахождения границ
     kernel_G_x = np.array([[-1, -2, -1],
                            [0, 0, 0],
@@ -41,7 +41,74 @@ def sobel_filter(gray_image):
     G = np.hypot(G_x, G_y)
     G_normalized = np.round((G / G.max()) * 255).astype(int)
     image_G = cv2.convertScaleAbs(G_normalized)
-    return image_G
+    if return_theta:
+        theta = np.arctan2(G_y, G_x)
+        return image_G, theta
+    else:
+        return image_G
+
+def non_max_suppression(G, theta):
+    # Получаем размеры матрицы
+    M, N = G.shape
+    # Создаем результирующую матрицу
+    Z = np.zeros((M, N), dtype=np.int32)
+    # Переводи радиан в градусы
+    # max -> 180, min -> -180
+    angle = theta * 180.0 / np.pi
+    # Поскольку выбор соседних пикселей, например, для -180+45 и 45 один и тот же, мы можем ограничиться только верхней полусферой,
+    # прибавив ко всем отрицательным значениям + 180 градусов
+    # max -> 180, min -> 0
+    angle[angle < 0] += 180
+    #Перебор всех пикселей кроме тех, у кого присутствуют не все соседи
+    for i in range(1, M - 1):
+        for j in range(1, N - 1):
+            # Инициализация значений соседних пикселей
+            q = 255
+            r = 255
+            # Примерно горизонтальное направление
+            if (0 <= angle[i, j] < 22.5) or (157.5 <= angle[i, j] <= 180):
+                # Пиксель слева
+                r = G[i - 1, j]
+                # Пиксель справа
+                q = G[i + 1, j]
+            # Направление примерно 45 градусов
+            elif 22.5 <= angle[i, j] < 67.5:
+                # Пиксель слева снизу
+                r = G[i - 1, j - 1]
+                # Пиксель справа сверху
+                q = G[i + 1, j + 1]
+            # Направление примерно 90 градусов
+            elif 67.5 <= angle[i, j] < 112.5:
+                # Пиксель снизу
+                r = G[i, j - 1]
+                # Пиксель сверху
+                q = G[i, j + 1]
+            # Направление примерно 135 градусов
+            elif 112.5 <= angle[i, j] < 157.5:
+                # Пиксель слева сверху
+                r = G[i - 1, j + 1]
+                # Пиксель справа снизу
+                q = G[i + 1, j - 1]
+            # Сравниваем значений соседних пикселей с текущим
+            if (G[i, j] >= q) and (G[i, j] >= r):
+                Z[i, j] = G[i, j]
+            else:
+                Z[i, j] = 0
+    plt.imshow(G, cmap='gray')
+    plt.axis('off')
+    plt.show()
+    plt.imshow(Z, cmap='gray')
+    plt.axis('off')
+    plt.show()
+    return Z
+
+
+
+
+def canny(gray_image):
+    G, theta = sobel_filter(gray_image, return_theta=True)
+    non_max_suppression(G, theta)
+    exit(0)
 
 # Обработка изображения
 def image_processing(path):
@@ -72,6 +139,7 @@ def image_processing(path):
     sobel_image = sobel_filter(gray_image)
 
     # Алгоритм Кэнни для нахождения границ
+    canny(gray_image)
     canny_image = cv2.Canny(blurred_image, threshold1=50, threshold2=150)  # 50, 150
 
     # Бинаризация
@@ -118,7 +186,7 @@ path_chess = "chess.jpg" # Пешка
 
 
 
-# image_processing("5.jpg")
+image_processing("5.jpg")
 # image_processing(path_chess)
 # image_processing(path_dog)
 # image_processing(path_seal)
